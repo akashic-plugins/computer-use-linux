@@ -10,4 +10,4 @@ python main.py plugin-install \
   --marketplace github
 ```
 
-The MCP server uses the desktop portal for pointer and keyboard input. The skill requires semantic targeting, serialized mutations, and observation-based readback before reporting success.
+The MCP server auto-detects the available pointer and keyboard backends instead of forcing a portal implementation. The skill requires semantic targeting, screenshot-metadata coordinates, serialized mutations, browser-profile preservation, and observation-based readback before reporting success.

@@ -3,15 +3,9 @@ from __future__ import annotations
 from agent.plugins import McpServerSpec, Plugin
 
 
-_PORTAL_ENV = {
-    "COMPUTER_USE_LINUX_FORCE_PORTAL_POINTER": "1",
-    "COMPUTER_USE_LINUX_FORCE_PORTAL_KEYBOARD": "1",
-}
-
-
 class ComputerUseLinuxPlugin(Plugin):
     name = "computer-use-linux"
-    version = "1.0.1"
+    version = "1.1.0"
     desc = "Linux desktop control MCP and operating skill"
     author = "akashic-plugins"
 
@@ -25,6 +19,5 @@ class ComputerUseLinuxPlugin(Plugin):
             McpServerSpec(
                 name="computer-use-linux",
                 command=("bash", "mcp/run.sh"),
-                env=dict(_PORTAL_ENV),
             )
         ]

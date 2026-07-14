@@ -7,16 +7,13 @@ from pathlib import Path
 from plugin import ComputerUseLinuxPlugin
 
 
-def test_plugin_declares_skill_and_portal_mcp() -> None:
+def test_plugin_declares_skill_and_autodetected_mcp() -> None:
     assert ComputerUseLinuxPlugin.skill_roots() == ("skills",)
     servers = ComputerUseLinuxPlugin.mcp_servers()
     assert len(servers) == 1
     assert servers[0].name == "computer-use-linux"
     assert servers[0].command == ("bash", "mcp/run.sh")
-    assert servers[0].env == {
-        "COMPUTER_USE_LINUX_FORCE_PORTAL_POINTER": "1",
-        "COMPUTER_USE_LINUX_FORCE_PORTAL_KEYBOARD": "1",
-    }
+    assert servers[0].env == {}
 
 
 def test_wrapper_forwards_mcp_protocol_to_explicit_binary(tmp_path: Path) -> None:
@@ -78,3 +75,18 @@ def test_skill_requires_readback_and_forbids_fake_success() -> None:
     assert "Never create a shim or fallback that returns exit code 0" in skill
     assert "do not self-register another copy" in skill.lower()
     assert "never retry against whichever window is currently focused" in skill.lower()
+
+
+def test_skill_covers_observed_wayland_and_browser_failures() -> None:
+    skill = (
+        Path(__file__).resolve().parents[1]
+        / "skills/computer-use-linux/SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    assert "coordinate_width" in skill
+    assert "Do not multiply or divide" in skill
+    assert "Screenshot portal readiness and RemoteDesktop input support are independent" in skill
+    assert "Do not kill or restart the browser" in skill
+    assert "hard-code `--user-data-dir`" in skill
+    assert "Never bypass the MCP with raw `ydotool`" in skill
+    assert "`ok=true` means only" in skill
