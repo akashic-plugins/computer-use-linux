@@ -5,7 +5,7 @@ from agent.plugins import McpServerSpec, Plugin
 
 class ComputerUseLinuxPlugin(Plugin):
     name = "computer-use-linux"
-    version = "1.1.0"
+    version = "1.1.1"
     desc = "Linux desktop control MCP and operating skill"
     author = "akashic-plugins"
 

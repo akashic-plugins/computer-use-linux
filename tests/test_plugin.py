@@ -88,5 +88,8 @@ def test_skill_covers_observed_wayland_and_browser_failures() -> None:
     assert "Screenshot portal readiness and RemoteDesktop input support are independent" in skill
     assert "Do not kill or restart the browser" in skill
     assert "hard-code `--user-data-dir`" in skill
+    assert "use semantic elements when the tree is complete" in skill
+    assert "add only `--force-renderer-accessibility`" in skill
+    assert "never use `--restart` or a forced kill" in skill
     assert "Never bypass the MCP with raw `ydotool`" in skill
     assert "`ok=true` means only" in skill

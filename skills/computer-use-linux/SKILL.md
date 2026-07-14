@@ -29,8 +29,10 @@ Use the plugin-provided `computer-use-linux` MCP tools. The plugin owns MCP regi
 
 - Focus the explicit target window before keyboard input. Treat a `no focused element` warning as failed verification even if the keystrokes may have been sent.
 - Prefer `set_value`, an editable element, or targeted `type_text`. For non-ASCII text, read back the exact text before sending; if the backend cannot enter it, report that limitation instead of invoking `ydotool` directly.
+- Choose the strategy from the current page, not the site's reputation: use semantic elements when the tree is complete; otherwise use a fresh MCP screenshot and its coordinates. Re-evaluate after every navigation instead of caching a site's coordinates.
 - Preserve an existing browser process and profile. Navigate in the current window with `Ctrl+L`, targeted text input, and `Enter` when the user authorizes navigation.
 - Chromium or Electron may need `--force-renderer-accessibility` when the page tree is incomplete. Do not kill or restart the browser, hard-code `--user-data-dir` or `--profile-directory`, create a wrapper, or alter its DBus/keyring environment merely to enable the tree. Explain the limitation and ask the user to close and reopen normally before changing launch configuration.
+- If the user explicitly authorizes persistent Chromium accessibility, preserve the original launcher, default profile, and keyring environment; add only `--force-renderer-accessibility`. Let the user close Chromium normally so session state can persist, and never use `--restart` or a forced kill.
 - Never infer authentication from a homepage or the presence of cookie files. Verify with a protected page or an account control visible in the current UI.
 
 ## Backend diagnosis
