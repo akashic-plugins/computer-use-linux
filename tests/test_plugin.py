@@ -1,72 +1,70 @@
 from __future__ import annotations
 
+import json
+import subprocess
 from pathlib import Path
 
-import pytest
-
-import plugin
 from plugin import ComputerUseLinuxPlugin
 
 
-def _make_executable(path: Path) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-    _ = path.chmod(0o755)
-    return path
-
-
-def test_plugin_declares_skill_and_portal_mcp(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    binary = _make_executable(tmp_path / "computer-use-linux")
-    monkeypatch.setenv("COMPUTER_USE_LINUX_BIN", str(binary))
-
+def test_plugin_declares_skill_and_portal_mcp() -> None:
     assert ComputerUseLinuxPlugin.skill_roots() == ("skills",)
     servers = ComputerUseLinuxPlugin.mcp_servers()
     assert len(servers) == 1
     assert servers[0].name == "computer-use-linux"
-    assert servers[0].command == (str(binary), "mcp")
+    assert servers[0].command == ("bash", "mcp/run.sh")
     assert servers[0].env == {
         "COMPUTER_USE_LINUX_FORCE_PORTAL_POINTER": "1",
         "COMPUTER_USE_LINUX_FORCE_PORTAL_KEYBOARD": "1",
     }
 
 
-def test_resolver_uses_highest_nvm_version(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    lower = _make_executable(
-        tmp_path / ".nvm/versions/node/v9.1.0/bin/computer-use-linux"
+def test_wrapper_forwards_mcp_protocol_to_explicit_binary(tmp_path: Path) -> None:
+    server = tmp_path / "server.py"
+    server.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "for line in sys.stdin:\n"
+        "    request = json.loads(line)\n"
+        "    result = {'protocolVersion': '2025-11-25'} if request['method'] == 'initialize' else {'tools': [{'name': 'doctor', 'inputSchema': {'type': 'object'}}]}\n"
+        "    print(json.dumps({'jsonrpc': '2.0', 'id': request['id'], 'result': result}), flush=True)\n",
+        encoding="utf-8",
     )
-    higher = _make_executable(
-        tmp_path / ".nvm/versions/node/v20.19.4/bin/computer-use-linux"
+    _ = server.chmod(0o755)
+    wrapper = Path(__file__).resolve().parents[1] / "mcp/run.sh"
+    process = subprocess.Popen(
+        ["bash", str(wrapper)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env={"COMPUTER_USE_LINUX_BIN": str(server), "PATH": "/usr/bin"},
     )
-    lower_node = _make_executable(lower.parent / "node")
-    higher_node = _make_executable(higher.parent / "node")
-    monkeypatch.delenv("COMPUTER_USE_LINUX_BIN", raising=False)
-    monkeypatch.setattr(plugin.shutil, "which", lambda _: None)
-    monkeypatch.setattr(Path, "home", lambda: tmp_path)
-
-    assert plugin._resolve_command() == (
-        str(higher_node),
-        str(higher.resolve()),
-        "mcp",
+    requests = (
+        '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}\n'
+        '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}\n'
     )
-    assert plugin._resolve_command()[0] != str(lower_node)
+    stdout, stderr = process.communicate(requests, timeout=5)
+    responses = [json.loads(line) for line in stdout.splitlines()]
+
+    assert process.returncode == 0
+    assert stderr == ""
+    assert responses[0]["result"]["protocolVersion"] == "2025-11-25"
+    assert responses[1]["result"]["tools"][0]["name"] == "doctor"
 
 
-def test_resolver_fails_loud_when_binary_is_missing(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    monkeypatch.delenv("COMPUTER_USE_LINUX_BIN", raising=False)
-    monkeypatch.setattr(plugin.shutil, "which", lambda _: None)
-    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+def test_wrapper_fails_loud_when_binary_is_missing(tmp_path: Path) -> None:
+    wrapper = Path(__file__).resolve().parents[1] / "mcp/run.sh"
+    result = subprocess.run(
+        ["bash", str(wrapper)],
+        capture_output=True,
+        text=True,
+        env={"HOME": str(tmp_path), "PATH": "/usr/bin"},
+        check=False,
+    )
 
-    with pytest.raises(FileNotFoundError, match="未找到 computer-use-linux"):
-        plugin._resolve_command()
+    assert result.returncode == 127
+    assert "未找到 computer-use-linux" in result.stderr
 
 
 def test_skill_requires_readback_and_forbids_fake_success() -> None:

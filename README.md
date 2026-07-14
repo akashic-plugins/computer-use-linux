@@ -2,7 +2,7 @@
 
 Akashic plugin that contributes one `computer-use-linux` MCP server and one matching desktop-operation skill.
 
-The host must already have `@agent-sh/computer-use-linux` installed. The plugin resolves the executable from `COMPUTER_USE_LINUX_BIN`, `PATH`, or the highest installed nvm Node version, and fails installation clearly when none exists.
+The host must already have `@agent-sh/computer-use-linux` installed. The plugin resolves the executable from `COMPUTER_USE_LINUX_BIN`, `PATH`, or the highest installed nvm Node version, and fails startup clearly when none exists.
 
 ```bash
 python main.py plugin-install \
