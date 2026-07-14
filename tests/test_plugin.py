@@ -26,7 +26,7 @@ def test_plugin_declares_skill_and_portal_mcp(
     servers = ComputerUseLinuxPlugin.mcp_servers()
     assert len(servers) == 1
     assert servers[0].name == "computer-use-linux"
-    assert servers[0].command == (str(binary.resolve()), "mcp")
+    assert servers[0].command == (str(binary), "mcp")
     assert servers[0].env == {
         "COMPUTER_USE_LINUX_FORCE_PORTAL_POINTER": "1",
         "COMPUTER_USE_LINUX_FORCE_PORTAL_KEYBOARD": "1",
@@ -43,12 +43,18 @@ def test_resolver_uses_highest_nvm_version(
     higher = _make_executable(
         tmp_path / ".nvm/versions/node/v20.19.4/bin/computer-use-linux"
     )
+    lower_node = _make_executable(lower.parent / "node")
+    higher_node = _make_executable(higher.parent / "node")
     monkeypatch.delenv("COMPUTER_USE_LINUX_BIN", raising=False)
     monkeypatch.setattr(plugin.shutil, "which", lambda _: None)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-    assert plugin._resolve_binary() == str(higher.resolve())
-    assert plugin._resolve_binary() != str(lower.resolve())
+    assert plugin._resolve_command() == (
+        str(higher_node),
+        str(higher.resolve()),
+        "mcp",
+    )
+    assert plugin._resolve_command()[0] != str(lower_node)
 
 
 def test_resolver_fails_loud_when_binary_is_missing(
@@ -60,7 +66,7 @@ def test_resolver_fails_loud_when_binary_is_missing(
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     with pytest.raises(FileNotFoundError, match="未找到 computer-use-linux"):
-        plugin._resolve_binary()
+        plugin._resolve_command()
 
 
 def test_skill_requires_readback_and_forbids_fake_success() -> None:
